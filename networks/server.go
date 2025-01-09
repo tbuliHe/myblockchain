@@ -36,6 +36,8 @@ free:
 		case <-ticker.C:
 			fmt.Println("Server is running every 5 seconds")
 		default:
+			// do nothing
+			continue
 		}
 	}
 	fmt.Println("Server Stopped")

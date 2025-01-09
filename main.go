@@ -3,25 +3,25 @@ package main
 import (
 	"time"
 
-	"github.com/anthdm/projectx/network"
+	"myblockchain/networks"
 )
 
 func main() {
-	trLocal := network.NewLocalTransport("Local")
-	trRemote := network.NewLocalTransport("Remote")
+	trLocal := networks.NewLocalTransport("LOCAL")
+	trRemote := networks.NewLocalTransport("REMOTE")
 
 	trLocal.Connect(trRemote)
 	trRemote.Connect(trLocal)
 
 	go func() {
 		for {
-			trRemote.SendMessage("Local", []byte("Hello, World!"))
+			trRemote.SendMessage("LOCAL", []byte("Hello, World!"))
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	opt := network.ServerOptions{
-		Transports: []network.Transport{trLocal},
+	opt := networks.ServerOptions{
+		Transport: []networks.Transport{trLocal},
 	}
-	s := network.NewServer(opt)
+	s := networks.NewServer(opt)
 	s.Start()
 }
