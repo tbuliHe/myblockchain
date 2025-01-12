@@ -14,7 +14,7 @@ type Header struct {
 	DataHash      types.Hash
 	PrevBlockHash types.Hash
 	Timestamp     uint64
-	Height        uint64
+	Height        uint32
 }
 
 type Block struct {

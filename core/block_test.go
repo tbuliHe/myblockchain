@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func randBlock(h uint64) *Block {
+func randBlock(h uint32) *Block {
 	header := &Header{
 		Version:       1,
 		PrevBlockHash: types.RandomHash(),
@@ -19,7 +19,15 @@ func randBlock(h uint64) *Block {
 	tx := Transaction{
 		Data: []byte("Hello World"),
 	}
+
 	return NewBlock(header, []Transaction{tx})
+}
+
+func randBlockWithSignature(t *testing.T, h uint32) *Block {
+	b := randBlock(h)
+	privKey := crypto.GeneratePrivateKey()
+	assert.Nil(t, b.Sign(privKey))
+	return b
 }
 
 func TestBlockSign(t *testing.T) {
