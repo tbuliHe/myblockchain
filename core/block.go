@@ -17,8 +17,15 @@ type Header struct {
 	Height        uint32
 }
 
+func (h *Header) Bytes() []byte {
+	buf := bytes.Buffer{}
+	enc := gob.NewEncoder(&buf)
+	enc.Encode(h)
+	return buf.Bytes()
+}
+
 type Block struct {
-	Header
+	*Header
 	Transactions []Transaction
 	hash         types.Hash
 	Validatar    crypto.PublicKey
@@ -27,13 +34,17 @@ type Block struct {
 
 func NewBlock(h *Header, txs []Transaction) *Block {
 	return &Block{
-		Header:       *h,
+		Header:       h,
 		Transactions: txs,
 	}
 }
 
+func (b *Block) AddTransaction(tx *Transaction) {
+	b.Transactions = append(b.Transactions, *tx)
+}
+
 func (b *Block) Sign(priv crypto.PrivateKey) error {
-	sig, err := priv.Sign(b.HeaderData())
+	sig, err := priv.Sign(b.Header.Bytes())
 	if err != nil {
 		return err
 	}
@@ -46,8 +57,13 @@ func (b *Block) Verify() error {
 	if b.Signature == nil {
 		return fmt.Errorf("Block is not signed")
 	}
-	if !b.Signature.Verify(b.HeaderData(), b.Validatar) {
+	if !b.Signature.Verify(b.Header.Bytes(), b.Validatar) {
 		return fmt.Errorf("Block signature is invalid")
+	}
+	for _, tx := range b.Transactions {
+		if err := tx.Verify(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -60,18 +76,9 @@ func (b *Block) Encode(w io.Writer, enc Encoder[*Block]) error {
 	return enc.Encode(w, b)
 }
 
-func (b *Block) Hash(hasher Hasher[*Block]) types.Hash {
+func (b *Block) Hash(hasher Hasher[*Header]) types.Hash {
 	if b.hash.IsZero() {
-		b.hash = hasher.Hash(b)
+		b.hash = hasher.Hash(b.Header)
 	}
 	return b.hash
-}
-
-func (b *Block) HeaderData() []byte {
-	buf := bytes.Buffer{}
-	enc := gob.NewEncoder(&buf)
-	enc.Encode(b.Header)
-
-	return buf.Bytes()
-
 }
