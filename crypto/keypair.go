@@ -5,9 +5,34 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/gob"
 	"math/big"
 	"myblockchain/types"
 )
+
+func init() {
+	gob.Register((elliptic.P256()))
+	gob.Register(&PublicKey{})
+	gob.Register(&Signature{})
+}
+
+// 自定义公钥序列化
+func (k PublicKey) GobEncode() ([]byte, error) {
+	if k.Key == nil {
+		return nil, nil
+	}
+	return elliptic.MarshalCompressed(k.Key.Curve, k.Key.X, k.Key.Y), nil
+}
+
+func (k *PublicKey) GobDecode(data []byte) error {
+	if len(data) == 0 {
+		k.Key = nil
+		return nil
+	}
+	x, y := elliptic.UnmarshalCompressed(elliptic.P256(), data)
+	k.Key = &ecdsa.PublicKey{Curve: elliptic.P256(), X: x, Y: y}
+	return nil
+}
 
 type PrivateKey struct {
 	key *ecdsa.PrivateKey
