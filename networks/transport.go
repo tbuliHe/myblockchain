@@ -12,5 +12,6 @@ type Transport interface {
 	Consumer() <-chan RPC
 	Connect(Transport) error
 	SendMessage(NetAddr, []byte) error
+	Broadcast([]byte) error
 	Addr() NetAddr
 }

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"myblockchain/core"
+
+	"github.com/sirupsen/logrus"
 )
 
 type MessageType byte
@@ -33,37 +35,57 @@ func (msg *Message) Bytes() []byte {
 	buf := &bytes.Buffer{}
 	gob.NewEncoder(buf).Encode(msg)
 	return buf.Bytes()
+
 }
 
-type RPCHandler interface {
-	HandleRPC(rpc RPC) error
+type DecodedMessage struct {
+	From NetAddr
+	Data any
 }
 
-type DefaultRPCHandler struct {
-	p RPCProcess
-}
+type RPCDecodeFunc func(RPC) (*DecodedMessage, error)
 
-func NewDefaultRPCHandler(p RPCProcess) *DefaultRPCHandler {
-	return &DefaultRPCHandler{p}
-}
-
-func (h *DefaultRPCHandler) HandleRPC(rpc RPC) error {
+func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 	msg := Message{}
 	if err := gob.NewDecoder(rpc.Payload).Decode(&msg); err != nil {
-		return fmt.Errorf("failed to decode message from %s:%s", rpc.From, err)
+		return nil, fmt.Errorf("failed to decode message from %s:%s", rpc.From, err)
 	}
+	logrus.WithFields(logrus.Fields{
+		"from": rpc.From,
+		"type": msg.Header,
+	}).Debug("received message")
+
 	switch msg.Header {
 	case MessageTypeTx:
 		tx := new(core.Transaction)
 		if err := tx.Decode(core.NewGobTxDecoder(bytes.NewReader(msg.Data))); err != nil {
-			return err
+			return nil, err
 		}
-		return h.p.ProcessTransaction(rpc.From, tx)
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: tx,
+		}, nil
 	default:
-		return fmt.Errorf("invalid message type: %d", msg.Header)
+		return nil, fmt.Errorf("invalid message type: %d", msg.Header)
 	}
 }
 
-type RPCProcess interface {
-	ProcessTransaction(NetAddr, *core.Transaction) error
+// type RPCHandler interface {
+// 	HandleRPC(rpc RPC) error
+// }
+
+// type DefaultRPCHandler struct {
+// 	p RPCProcess
+// }
+
+// func NewDefaultRPCHandler(p RPCProcess) *DefaultRPCHandler {
+// 	return &DefaultRPCHandler{p}
+// }
+
+// func (h *DefaultRPCHandler) HandleRPC(rpc RPC) error {
+
+// }
+
+type RPCProcessor interface {
+	ProcessMessage(*DecodedMessage) error
 }
