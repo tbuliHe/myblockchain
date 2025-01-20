@@ -27,7 +27,11 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
+
+	privKey := crypto.GeneratePrivateKey()
 	opt := networks.ServerOptions{
+		PrivateKey: &privKey,
+		ID:         "LOCAL",
 		Transports: []networks.Transport{trLocal},
 	}
 	s := networks.NewServer(opt)
