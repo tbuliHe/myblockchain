@@ -3,13 +3,16 @@ package core
 import (
 	"fmt"
 	"myblockchain/types"
+	"os"
 	"testing"
 
+	"github.com/go-kit/log"
 	"github.com/stretchr/testify/assert"
 )
 
 func NewBlockChainWithGenesis(t *testing.T) *BlockChain {
-	bc, err := NewBlockChain(randBlock(0, types.Hash{}))
+	l := log.NewLogfmtLogger(os.Stderr)
+	bc, err := NewBlockChain(l, randBlock(t, 0, types.Hash{}))
 	assert.Nil(t, err)
 	return bc
 }
@@ -17,7 +20,7 @@ func NewBlockChainWithGenesis(t *testing.T) *BlockChain {
 func TestAddBlock(t *testing.T) {
 	bc := NewBlockChainWithGenesis(t)
 	for i := 0; i < 100; i++ {
-		b := randBlockWithSignature(t, uint32(i+1), getPrevBlockHash(t, bc, uint32(i+1)))
+		b := randBlock(t, uint32(i+1), getPrevBlockHash(t, bc, uint32(i+1)))
 		err := bc.AddBlock(b)
 		assert.Nil(t, err)
 	}
@@ -39,7 +42,7 @@ func TestHasBlock(t *testing.T) {
 func TestGetHeader(t *testing.T) {
 	bc := NewBlockChainWithGenesis(t)
 	for i := 0; i < 100; i++ {
-		b := randBlockWithSignature(t, uint32(i+1), getPrevBlockHash(t, bc, uint32(i+1)))
+		b := randBlock(t, uint32(i+1), getPrevBlockHash(t, bc, uint32(i+1)))
 		assert.Nil(t, bc.AddBlock(b))
 		header, err := bc.GetHeader(b.Height)
 		assert.Nil(t, err)
@@ -49,8 +52,8 @@ func TestGetHeader(t *testing.T) {
 
 func TestAddBlockToHigh(t *testing.T) {
 	bc := NewBlockChainWithGenesis(t)
-	assert.Nil(t, bc.AddBlock(randBlockWithSignature(t, 1, getPrevBlockHash(t, bc, uint32(1)))))
-	assert.NotNil(t, bc.AddBlock(randBlockWithSignature(t, 3, types.Hash{})))
+	assert.Nil(t, bc.AddBlock(randBlock(t, 1, getPrevBlockHash(t, bc, uint32(1)))))
+	assert.NotNil(t, bc.AddBlock(randBlock(t, 3, types.Hash{})))
 
 }
 

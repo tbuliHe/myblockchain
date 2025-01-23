@@ -2,9 +2,9 @@ package networks
 
 import (
 	"bytes"
-	"fmt"
 	"myblockchain/core"
 	"myblockchain/crypto"
+	"myblockchain/types"
 	"os"
 	"time"
 
@@ -24,14 +24,14 @@ type ServerOptions struct {
 }
 type Server struct {
 	ServerOptions
-	blockTime   time.Duration
+	chain       *core.BlockChain
 	memPool     *TxPool
 	isValidator bool
 	rpcch       chan RPC
 	quitch      chan struct{}
 }
 
-func NewServer(opts ServerOptions) *Server {
+func NewServer(opts ServerOptions) (*Server, error) {
 	if opts.BlockTime == time.Duration(0) {
 		opts.BlockTime = defaultBlockTime
 	}
@@ -42,11 +42,15 @@ func NewServer(opts ServerOptions) *Server {
 		opts.Logger = log.NewLogfmtLogger(os.Stderr)
 		opts.Logger = log.With(opts.Logger, "ID", opts.ID)
 	}
+	chain, err := core.NewBlockChain(opts.Logger, genesisBlock())
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
 		ServerOptions: opts,
-		blockTime:     opts.BlockTime,
 		memPool:       NewTxPool(),
 		isValidator:   opts.PrivateKey != nil,
+		chain:         chain,
 		rpcch:         make(chan RPC),
 		quitch:        make(chan struct{}, 1),
 	}
@@ -56,7 +60,7 @@ func NewServer(opts ServerOptions) *Server {
 	if s.isValidator {
 		go s.validatorLoop()
 	}
-	return s
+	return s, nil
 }
 
 func (s *Server) Start() {
@@ -83,8 +87,8 @@ free:
 }
 
 func (s *Server) validatorLoop() {
-	ticker := time.NewTicker(s.blockTime)
-	s.Logger.Log("msg", "Validator loop started", "blockTime", s.blockTime)
+	ticker := time.NewTicker(s.ServerOptions.BlockTime)
+	s.Logger.Log("msg", "Validator loop started", "blockTime", s.ServerOptions.BlockTime)
 	for {
 		<-ticker.C
 		s.createNewBlock()
@@ -127,6 +131,11 @@ func (s *Server) ProcessTransaction(tx *core.Transaction) error {
 	return s.memPool.Add(tx)
 }
 
+func (s *Server) broadcastBlock(b *core.Block) error {
+
+	return nil
+}
+
 func (s *Server) broadcastTransactions(tx *core.Transaction) error {
 	buf := &bytes.Buffer{}
 	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
@@ -137,7 +146,28 @@ func (s *Server) broadcastTransactions(tx *core.Transaction) error {
 }
 
 func (s *Server) createNewBlock() error {
-	fmt.Println("Creating a new block")
+	curHeader, err := s.chain.GetHeader(s.chain.Height())
+	if err != nil {
+		return err
+	}
+
+	txx := s.memPool.Transactions()
+
+	block, err := core.NewBlockFromHeader(curHeader, txx)
+	if err != nil {
+		return err
+	}
+
+	if err := block.Sign(*s.PrivateKey); err != nil {
+		return err
+	}
+
+	if err := s.chain.AddBlock(block); err != nil {
+		return err
+	}
+
+	s.memPool.Flush()
+
 	return nil
 }
 
@@ -150,4 +180,14 @@ func (s *Server) initTransports() {
 			}
 		}(t)
 	}
+}
+
+func genesisBlock() *core.Block {
+	header := &core.Header{
+		Version:   1,
+		DataHash:  types.Hash{},
+		Height:    0,
+		Timestamp: 000000,
+	}
+	return core.NewBlock(header, nil)
 }
