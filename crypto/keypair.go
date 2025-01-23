@@ -11,7 +11,6 @@ import (
 )
 
 func init() {
-	gob.Register((elliptic.P256()))
 	gob.Register(&PublicKey{})
 	gob.Register(&Signature{})
 }

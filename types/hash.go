@@ -1,7 +1,6 @@
 package types
 
 import (
-	"crypto/rand"
 	"encoding/hex"
 )
 
@@ -21,9 +20,7 @@ func (h Hash) ToSlice() []byte {
 		panic("given bytes should be 32 bytes long")
 	}
 	b := make([]byte, 32)
-	for i, v := range h {
-		b[i] = v
-	}
+	copy(b, h[:])
 	return b
 }
 
@@ -38,14 +35,4 @@ func HashFromBytes(b []byte) Hash {
 	var h Hash
 	copy(h[:], b)
 	return h
-}
-
-func RandomBytes(size int) []byte {
-	token := make([]byte, size)
-	rand.Read(token)
-	return token
-}
-
-func RandomHash() Hash {
-	return HashFromBytes(RandomBytes(32))
 }
