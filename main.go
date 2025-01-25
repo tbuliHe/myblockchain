@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"math/rand"
 	"myblockchain/core"
 	"myblockchain/crypto"
 	"myblockchain/networks"
-	"strconv"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -35,6 +33,15 @@ func main() {
 			}
 			time.Sleep(2 * time.Second)
 		}
+	}()
+
+	go func() {
+		time.Sleep(7 * time.Second)
+		trLate := networks.NewLocalTransport("LATE_REMOTE")
+		trRemoteC.Connect(trLate)
+		lateServer := makeServer(string(trLate.Addr()), trLate, nil)
+
+		go lateServer.Start()
 	}()
 
 	privKey := crypto.GeneratePrivateKey()
@@ -66,7 +73,7 @@ func makeServer(id string, tr networks.Transport, privKey *crypto.PrivateKey) *n
 
 func sendTransaction(tr networks.Transport, to networks.NetAddr) error {
 	privKey := crypto.GeneratePrivateKey()
-	data := []byte(strconv.FormatInt(int64(rand.Intn(100000)), 10))
+	data := []byte{0x01, 0x0a, 0x02, 0x0a, 0x0b}
 	tx := core.NewTransaction(data)
 	tx.Sign(privKey)
 	buf := &bytes.Buffer{}

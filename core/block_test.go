@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"myblockchain/crypto"
 	"myblockchain/types"
 	"testing"
@@ -52,4 +53,14 @@ func TestBlockVerify(t *testing.T) {
 	otherPrivKey := crypto.GeneratePrivateKey()
 	b.Validatar = otherPrivKey.PublicKey()
 	assert.NotNil(t, b.Verify())
+}
+
+func TestDecodeEncodeBlock(t *testing.T) {
+	b := randBlock(t, 1, types.Hash{})
+	buf := &bytes.Buffer{}
+	assert.Nil(t, b.Encode(NewGobBlockEncoder(buf)))
+
+	decodedBlock := new(Block)
+	assert.Nil(t, decodedBlock.Decode(NewGobBlockDecoder(buf)))
+	assert.Equal(t, b, decodedBlock)
 }
