@@ -36,12 +36,12 @@ func (bc *BlockChain) AddBlock(b *Block) error {
 		return err
 	}
 
-	for _, tx := range b.Transactions {
-		bc.Logger.Log("msg", "executing code", "len", len(tx.Data), "hash", tx.Hash(&TxHasher{}))
-		vm := NewVM(tx.Data)
-		vm.Run()
-		bc.Logger.Log("msg", "executed result", "result", vm.stack[vm.sp])
-	}
+	// for _, tx := range b.Transactions {
+	// 	bc.Logger.Log("msg", "executing code", "len", len(tx.Data), "hash", tx.Hash(&TxHasher{}))
+	// 	vm := NewVM(tx.Data)
+	// 	vm.Run()
+	// 	bc.Logger.Log("msg", "executed result", "result", vm.stack.data[vm.stack.sp])
+	// }
 
 	return bc.addBlockWithoutValidation(b)
 }
