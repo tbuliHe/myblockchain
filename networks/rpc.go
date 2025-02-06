@@ -13,8 +13,11 @@ import (
 type MessageType byte
 
 const (
-	MessageTypeTx    MessageType = 0x1
-	MessageTypeBlock MessageType = 0x2
+	MessageTypeTx        MessageType = 0x1
+	MessageTypeBlock     MessageType = 0x2
+	MessageTypeGetBlock  MessageType = 0x3
+	MessageTypeStatus    MessageType = 0x4
+	MessageTypeGetStatus MessageType = 0x5
 )
 
 type RPC struct {
@@ -74,26 +77,25 @@ func DefaultRPCDecodeFunc(rpc RPC) (*DecodedMessage, error) {
 			From: rpc.From,
 			Data: block,
 		}, nil
+	case MessageTypeStatus:
+		status := new(StatusMessage)
+		if err := gob.NewDecoder(bytes.NewReader(msg.Data)).Decode(status); err != nil {
+			return nil, err
+		}
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: status,
+		}, nil
+
+	case MessageTypeGetStatus:
+		return &DecodedMessage{
+			From: rpc.From,
+			Data: nil,
+		}, nil
 	default:
 		return nil, fmt.Errorf("invalid message type: %d", msg.Header)
 	}
 }
-
-// type RPCHandler interface {
-// 	HandleRPC(rpc RPC) error
-// }
-
-// type DefaultRPCHandler struct {
-// 	p RPCProcess
-// }
-
-// func NewDefaultRPCHandler(p RPCProcess) *DefaultRPCHandler {
-// 	return &DefaultRPCHandler{p}
-// }
-
-// func (h *DefaultRPCHandler) HandleRPC(rpc RPC) error {
-
-// }
 
 type RPCProcessor interface {
 	ProcessMessage(*DecodedMessage) error

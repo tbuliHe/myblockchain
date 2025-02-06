@@ -8,44 +8,28 @@ import (
 	"myblockchain/crypto"
 	"myblockchain/networks"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
+var transports = []networks.Transport{
+	networks.NewLocalTransport("LOCAL"),
+	// network.NewLocalTransport("REMOTE_B"),
+	// network.NewLocalTransport("REMOTE_C"),
+}
+
 func main() {
-	trLocal := networks.NewLocalTransport("LOCAL")
-	trRemoteA := networks.NewLocalTransport("REMOTE_A")
-	trRemoteB := networks.NewLocalTransport("REMOTE_B")
-	trRemoteC := networks.NewLocalTransport("REMOTE_C")
 
-	trLocal.Connect(trRemoteA)
-	trLocal.Connect(trRemoteB)
-	trLocal.Connect(trRemoteC)
-	trRemoteA.Connect(trLocal)
-
-	initRemoteServers([]networks.Transport{trRemoteA, trRemoteB, trRemoteC})
+	initRemoteServers(transports)
 	// trRemote.Connect(trLocal)
-
-	go func() {
-		for {
-			if err := sendTransaction(trRemoteA, trLocal.Addr()); err != nil {
-				logrus.Error(err)
-			}
-			time.Sleep(2 * time.Second)
-		}
-	}()
-
+	localNode := transports[0]
+	trLate := networks.NewLocalTransport("LATE_NODE")
 	go func() {
 		time.Sleep(7 * time.Second)
-		trLate := networks.NewLocalTransport("LATE_REMOTE")
-		trRemoteC.Connect(trLate)
 		lateServer := makeServer(string(trLate.Addr()), trLate, nil)
-
 		go lateServer.Start()
 	}()
 
 	privKey := crypto.GeneratePrivateKey()
-	localServer := makeServer("LOCAL", trLocal, &privKey)
+	localServer := makeServer("LOCAL", localNode, &privKey)
 	localServer.Start()
 }
 
@@ -62,6 +46,7 @@ func makeServer(id string, tr networks.Transport, privKey *crypto.PrivateKey) *n
 	opt := networks.ServerOptions{
 		PrivateKey: privKey,
 		ID:         id,
+		Transport:  tr,
 		Transports: []networks.Transport{tr},
 	}
 	s, err := networks.NewServer(opt)

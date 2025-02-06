@@ -44,6 +44,7 @@ func (bc *BlockChain) AddBlock(b *Block) error {
 	// 	vm.Run()
 	// 	bc.Logger.Log("msg", "executed result", "result", vm.stack.data[vm.stack.sp])
 	// }
+	// fmt.Printf("state => %+v\n", bc.contractState.data)
 
 	return bc.addBlockWithoutValidation(b)
 }
