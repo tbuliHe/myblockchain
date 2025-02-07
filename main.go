@@ -2,52 +2,34 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"log"
 	"myblockchain/core"
 	"myblockchain/crypto"
 	"myblockchain/networks"
-	"time"
+	"net"
 )
-
-var transports = []networks.Transport{
-	networks.NewLocalTransport("LOCAL"),
-	// network.NewLocalTransport("REMOTE_B"),
-	// network.NewLocalTransport("REMOTE_C"),
-}
 
 func main() {
 
-	initRemoteServers(transports)
-	// trRemote.Connect(trLocal)
-	localNode := transports[0]
-	trLate := networks.NewLocalTransport("LATE_NODE")
-	go func() {
-		time.Sleep(7 * time.Second)
-		lateServer := makeServer(string(trLate.Addr()), trLate, nil)
-		go lateServer.Start()
-	}()
-
 	privKey := crypto.GeneratePrivateKey()
-	localServer := makeServer("LOCAL", localNode, &privKey)
-	localServer.Start()
+	localNode := makeServer("LOCAL_NODE", &privKey, ":3000", []string{":4000"})
+	go localNode.Start()
+	remoteNode := makeServer("REMOTE_NODE", nil, ":4000", []string{":5000"})
+	go remoteNode.Start()
+	remoteNodeB := makeServer("REMOTE_NODE_B", nil, ":5000", nil)
+	go remoteNodeB.Start()
+	// time.Sleep(1 * time.Second)
+	// tcpTester()
+	select {}
 }
 
-func initRemoteServers(trs []networks.Transport) {
-	for i := 0; i < len(trs); i++ {
-		id := fmt.Sprintf("REMOTE_%d", i)
-		s := makeServer(id, trs[i], nil)
-		go s.Start()
-	}
-}
-
-func makeServer(id string, tr networks.Transport, privKey *crypto.PrivateKey) *networks.Server {
+func makeServer(id string, privKey *crypto.PrivateKey, addr string, seedNodes []string) *networks.Server {
 
 	opt := networks.ServerOptions{
 		PrivateKey: privKey,
 		ID:         id,
-		Transport:  tr,
-		Transports: []networks.Transport{tr},
+		SeedNodes:  seedNodes,
+		ListenAddr: addr,
 	}
 	s, err := networks.NewServer(opt)
 	if err != nil {
@@ -56,16 +38,22 @@ func makeServer(id string, tr networks.Transport, privKey *crypto.PrivateKey) *n
 	return s
 }
 
-func sendTransaction(tr networks.Transport, to networks.NetAddr) error {
+func tcpTester() {
+	conn, err := net.Dial("tcp", ":3000")
+	if err != nil {
+		panic(err)
+	}
 	privKey := crypto.GeneratePrivateKey()
 	data := []byte{0x01, 0x0a, 0x02, 0x0a, 0x0b}
 	tx := core.NewTransaction(data)
 	tx.Sign(privKey)
 	buf := &bytes.Buffer{}
 	if err := tx.Encode(core.NewGobTxEncoder(buf)); err != nil {
-		return err
+		panic(err)
 	}
 	msg := networks.NewMessage(networks.MessageTypeTx, buf.Bytes())
-	return tr.SendMessage(to, msg.Bytes())
-
+	_, err = conn.Write(msg.Bytes())
+	if err != nil {
+		panic(err)
+	}
 }

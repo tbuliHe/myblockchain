@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"myblockchain/core"
+	"net"
 
 	"github.com/sirupsen/logrus"
 )
@@ -21,7 +22,7 @@ const (
 )
 
 type RPC struct {
-	From    NetAddr
+	From    net.Addr
 	Payload io.Reader
 }
 
@@ -42,7 +43,7 @@ func (msg *Message) Bytes() []byte {
 }
 
 type DecodedMessage struct {
-	From NetAddr
+	From net.Addr
 	Data any
 }
 

@@ -1,5 +1,7 @@
 package networks
 
+import "net"
+
 type NetAddr string
 
 //	type RPC struct {
@@ -11,7 +13,7 @@ type Transport interface {
 	// Consumer returns a channel that will receive RPCs
 	Consumer() <-chan RPC
 	Connect(Transport) error
-	SendMessage(NetAddr, []byte) error
+	SendMessage(net.Addr, []byte) error
 	Broadcast([]byte) error
-	Addr() NetAddr
+	Addr() net.Addr
 }
