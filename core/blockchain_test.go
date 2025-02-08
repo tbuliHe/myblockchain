@@ -62,3 +62,15 @@ func getPrevBlockHash(t *testing.T, bc *BlockChain, height uint32) types.Hash {
 	assert.Nil(t, err)
 	return BlockHasher{}.Hash(prevheader)
 }
+
+func TestGetBlock(t *testing.T) {
+	bc := NewBlockChainWithGenesis(t)
+	lenBlocks := 100
+	for i := 0; i < lenBlocks; i++ {
+		block := randBlock(t, uint32(i+1), getPrevBlockHash(t, bc, uint32(i+1)))
+		assert.Nil(t, bc.AddBlock(block))
+		fetchedBlock, err := bc.GetBlock(block.Height)
+		assert.Nil(t, err)
+		assert.Equal(t, fetchedBlock, block)
+	}
+}

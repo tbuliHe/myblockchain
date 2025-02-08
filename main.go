@@ -7,6 +7,7 @@ import (
 	"myblockchain/crypto"
 	"myblockchain/networks"
 	"net"
+	"time"
 )
 
 func main() {
@@ -19,7 +20,16 @@ func main() {
 	remoteNodeB := makeServer("REMOTE_NODE_B", nil, ":5000", nil)
 	go remoteNodeB.Start()
 	// time.Sleep(1 * time.Second)
-	// tcpTester()
+	go func() {
+		time.Sleep(6 * time.Second)
+
+		// tcpTester()
+		lateNode := makeServer("LATE_NODE", nil, ":6000", []string{":4000"})
+		go lateNode.Start()
+	}()
+	time.Sleep(1 * time.Second)
+	tcpTester()
+
 	select {}
 }
 
