@@ -1,7 +1,6 @@
 package core
 
 import (
-	"crypto/elliptic"
 	"encoding/gob"
 	"io"
 )
@@ -63,6 +62,7 @@ func NewGobBlockDecoder(r io.Reader) *GobBlockDecoder {
 func (dec *GobBlockDecoder) Decode(b *Block) error {
 	return gob.NewDecoder(dec.r).Decode(b)
 }
-func init() {
-	gob.Register(elliptic.P256())
-}
+
+// func init() {
+// 	gob.Register(elliptic.P256())
+// }

@@ -3,6 +3,7 @@ package networks
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -52,10 +53,14 @@ func (t *TCPTransport) Start() error {
 	go t.acceptLoop()
 	return nil
 }
+
 func (t *TCPTransport) readLoop(peer *TCPPeer) {
-	buf := make([]byte, 2048)
+	buf := make([]byte, 4096)
 	for {
 		n, err := peer.conn.Read(buf)
+		if err == io.EOF {
+			continue
+		}
 		if err != nil {
 			fmt.Printf("read error: %s", err)
 			continue
