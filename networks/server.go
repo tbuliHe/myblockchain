@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"myblockchain/api"
 	"myblockchain/core"
 	"myblockchain/crypto"
 	"myblockchain/types"
@@ -18,10 +19,10 @@ import (
 var defaultBlockTime = 5 * time.Second
 
 type ServerOptions struct {
-	SeedNodes    []string
-	ListenAddr   string
-	TCPTransport *TCPTransport
-	// Transport     Transport
+	APIListenAddr string
+	SeedNodes     []string
+	ListenAddr    string
+	TCPTransport  *TCPTransport
 	ID            string
 	Logger        log.Logger
 	RPCDecodeFunc RPCDecodeFunc
@@ -57,6 +58,16 @@ func NewServer(opts ServerOptions) (*Server, error) {
 	chain, err := core.NewBlockChain(opts.Logger, genesisBlock())
 	if err != nil {
 		return nil, err
+	}
+
+	if len(opts.APIListenAddr) > 0 {
+		apiServerCfg := api.ServerConfig{
+			Logger:     opts.Logger,
+			ListenAddr: opts.APIListenAddr,
+		}
+		apiServer := api.NewServer(apiServerCfg, chain)
+		go apiServer.Start()
+		opts.Logger.Log("msg", "JSON API server running", "port", opts.APIListenAddr)
 	}
 
 	peerCh := make(chan *TCPPeer)
