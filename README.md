@@ -13,12 +13,15 @@ Original repo: https://github.com/anthdm/projectx
 - **Basic Blockchain Structure**
   - Block creation and validation
   - Transaction signing and verification
+  - Transaction mem pool
   - Simple consensus mechanism
 
 - **Network Layer**
   - Local P2P network simulation
   - Transaction broadcasting
   - Block propagation
+  - TCP transport
+  - JSON server
 
 - **Virtual Machine**
   - Simple stack-based VM
